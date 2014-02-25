@@ -1,0 +1,24 @@
+{
+  "name": "paparazzo",
+  "version": "0.0.0",
+  "description": "Simple website screen capture",
+  "main": "app/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Damien Caselli <damien.caselli@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "phantom": "~0.5.4",
+    "express": "~3.4.8",
+    "handlebars": "~2.0.0-alpha.1",
+    "consolidate": "~0.10.0",
+    "gm": "~1.14.2",
+    "portscanner": "~0.2.2"
+  },
+  "devDependencies": {
+    "nib": "~1.0.2",
+    "stylus": "~0.42.2",
+    "nodemon": "~1.0.15"
+  }
+}

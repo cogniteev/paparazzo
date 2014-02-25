@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Paparazzo</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,700">
+  <link rel="stylesheet" href="/css/index.css">
+</head>
+<body>
+<main>
+  <h1>What should be paparazzied?</h1>
+  <form action="/snap" method="post">
+    <input type="text" name="targetUrl">
+    <button type="submit"><i class="fa fa-camera"></i></button>
+  </form>
+  <figure>
+    <figcaption>
+      <a class="cg-button" target="_blank"><i class="fa fa-download"></i> Original snap</a>
+    </figcaption>
+    <img>
+  </figure>
+</main>
+<script src="/jquery.min.js"></script>
+<script src="/index.js"></script>
+</body>
+</html>

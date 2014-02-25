@@ -1,0 +1,76 @@
+@import 'nib'
+@import 'colors'
+
+canvas_size = 640px
+
+@import 'font-awesome.min.css'
+
+html
+body
+  height 100%
+
+body
+  font 1em/1.45 Lato, Arial, sans-serif
+  font-weight 300
+
+*
+  font-family Lato, Arial, sans-serif
+  box-sizing border-box
+
+main
+  margin 0 auto
+  max-width canvas_size
+
+h1
+  font-weight 300
+  text-align center
+
+a.cg-button
+input[type=text]
+button
+  border-radius 2px
+  margin 0
+  outline 0
+  &[disabled]
+    cursor not-allowed
+
+a.cg-button
+button
+  background nephritis
+  border none
+  color white
+  cursor pointer
+  display inline-block
+  font-size (14/16rem)
+  padding 5px 10px
+  text-decoration none
+  transition background .15s
+  &:not([disabled]):hover
+    background darken(nephritis, 20%)
+  &[disabled]
+    background lighten(nephritis, 10%)
+
+form
+  display flex
+  margin 0 auto
+  max-width 400px
+  input[type=text]
+    border 1px solid silver
+    flex 1
+    font-size (14/16rem)
+    padding 5px
+    &[disabled]
+      background #efefe5
+  button[type=submit]
+    margin-left 5px
+
+figure
+  display none
+  margin 20px 0 0
+  figcaption
+    margin-bottom 10px
+    text-align center
+  img
+    display block
+    height auto
+    max-width 100%
