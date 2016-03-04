@@ -1,3 +1,4 @@
+'use strict';
 var express = require('express')
   , phantom = require('phantom')
   , handlebars = require('handlebars')
@@ -39,37 +40,49 @@ app.post('/snap', function(req, res){
     , laptop = path.join(__dirname, '/laptop.png')
     , snapPath = path.join(__dirname, '/public/snaps/', imgName)
     , presentableSnap = path.join(__dirname, '/public/snaps/', 'laptop-' + imgName)
-    , tmp = path.join(__dirname, '/tmp', imgName);
+    , tmp = path.join(__dirname, '/tmp', imgName),
+    error;
 
-  portscanner.findAPortNotInUse(40000, 60000, 'localhost', function(err, freeport){
-    phantom.create({ port: freeport }, function(ph){
-      ph.createPage(function(page){
-        page.set('viewportSize', { width: 1440, height: 900 });
-        page.open(pageUrl, function(status){
-          page.set('clipRect', { top: 0, left: 0, width: 1440, height: 900 });
-          page.render(snapPath, function(){
+
+  phantom.create()
+  .then(function (ph) {
+    ph.createPage()
+    .then(function (page) {
+      page.property('viewportSize', {width: 700, height: 400})
+      .then(function () {
+        page.open(pageUrl)
+        .then(function (status) {
+          if (status != 'success') {
+            error = 'Failed to fetch page at ' + pageUrl;
             ph.exit();
-            gm(snapPath).resize(850).crop(850, 495).write(tmp, function(err){
-              if (err) console.log(err);
-              gm()
-              .in('-page', '+0+0')
-              .in(laptop)
-              .in('-page', '+176+114')
-              .in(tmp)
-              .mosaic()
-              .write(presentableSnap, function(err){
-                if (err) console.log(err);
-                fs.unlinkSync(tmp);
-                res.send({
-                  laptop: '/snaps/laptop-' + imgName,
-                  snap: '/snaps/' + imgName
-                });
+            return res.json(422, {msg: error});
+          } else {
+            page.render(snapPath)
+            .then(function () {
+              ph.exit();
+              return res.json({
+                snap: '/snaps/' + imgName
               });
+            })
+            .catch(function (err) {
+              error = err;
             });
-          });
+          }
+        })
+        .catch(function (err) {
+          error = err;
         });
+      })
+      .catch(function (err) {
+        error = er;
       });
+    })
+    .catch(function (err) {
+      erro = err;
     });
+  })
+  .catch(function (err) {
+    error = err;
   });
 });
 

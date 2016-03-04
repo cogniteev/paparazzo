@@ -9,7 +9,7 @@
   "author": "Damien Caselli <damien.caselli@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "phantom": "~0.5.4",
+    "phantom": "~2.0.3",
     "express": "~3.4.8",
     "handlebars": "~2.0.0-alpha.1",
     "consolidate": "~0.10.0",
