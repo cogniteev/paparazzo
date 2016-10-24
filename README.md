@@ -2,13 +2,24 @@
 
 Simply capture websites and simulate device display for shiny presentations.
 
-### Requirements
+## Requirements
 
+* Node.js and npm (>= 6) an ```.nvmrc``` file is include
 * graphicsmagick
-* phantomjs
-* nodejs
+
+## Installation
 
 ```bash
 npm install
-node app/index.js
 ```
+
+## Usage
+
+An npm script is provided to launch the app trough forever (live-reload) by using the following command
+
+```bash
+npm start
+```
+
+
+
