@@ -1,89 +1,158 @@
 'use strict';
-var express = require('express')
-  , phantom = require('phantom')
-  , handlebars = require('handlebars')
-  , cons = require('consolidate')
-  , gm = require('gm')
-  , path = require('path')
-  , fs = require('fs')
-  , url = require('url')
-  , portscanner = require('portscanner')
-  , app = express();
+let express = require('express'),
+  bodyParser = require('body-parser'),
+  phantom = require('phantom'),
+  cons = require('consolidate'),
+  path = require('path'),
+  gm = require('gm'),
+  url = require('url'),
+  fs = require('fs'),
+  app = express();
+
+function wait(timeout) {
+  let p = Promise.defer();
+  setTimeout(() => p.resolve(), timeout);
+  return p.promise;
+}
+
+function buildPresentableSnap(originalSpap, imgName) {
+  return new Promise((resolve, reject) => {
+    let tmp = path.join(__dirname, '/tmp', imgName),
+      laptop = path.join(__dirname, '/laptop.png'),
+      presentableSnap = path.join(__dirname, '/public/snaps/', 'laptop-' + imgName);
+    gm(originalSpap).resize(850).crop(850, 495).write(tmp, err => {
+      if (err) {
+        return reject(err);
+      }
+      gm()
+        .in('-page', '+0+0')
+        .in(laptop)
+        .in('-page', '+176+114')
+        .in(tmp)
+        .mosaic()
+        .write(presentableSnap, function(err) {
+          fs.unlinkSync(tmp);
+          if (err) {
+            return reject(err);
+          }
+          return resolve(presentableSnap);
+        });
+    });
+  });
+}
+
+function fixUrl(rawUrl) {
+  let p = url.parse(rawUrl);
+  if (!p.protocol && !p.host) {
+    p.protocol = 'http:';
+    p.slashes = true;
+  }
+  p = url.format(p);
+  return p;
+}
+
+function setLocalStorage(localStorage) {
+  Object.keys(localStorage).forEach(function(key) {
+    localStorage.setItem(key, localStorage[key]);
+  });
+}
 
 app.engine('hbs', cons.handlebars);
 app.set('view engine', 'hbs');
 app.set('views', path.join(__dirname, '/views'));
 
 app.use(express.logger('tiny'));
-app.use(express.json());
-app.use(express.urlencoded());
 app.use(express.static(path.join(__dirname, '/public')));
+app.use(bodyParser.json());
 
-app.get('/', function(req, res){
+app.get('/', function(req, res) {
   res.render('index');
 });
 
-app.post('/snap', function(req, res){
-  if (! req.body.targetUrl || req.body.targetUrl.trim() === ''){
-    res.send({ status: 'error' });
+app.post('/snap', function(req, res) {
+  const {
+    targetUrl,
+    paperSize,
+    localStorage,
+    viewportSize = {
+      width: 1440,
+      height: 900
+    },
+    exportType = 'screenshot',
+    waitFor = 1000
+  } = req.body;
+
+  if (!targetUrl || targetUrl.trim() === '') {
+    return res.json(422, {
+      msg: 'missing targetUrl parameter'
+    });
   }
-  var pageUrl = (function(u){
-      var p = url.parse(u);
-      if (! p.protocol && ! p.host) {
-        p.protocol = 'http:';
-        p.slashes = true;
-      }
-      p = url.format(p);
-      return p;
-    }(req.body.targetUrl.trim()))
-    , imgName = pageUrl.replace(/\W/g, '') + '-' + Date.now() + '.png'
-    , laptop = path.join(__dirname, '/laptop.png')
-    , snapPath = path.join(__dirname, '/public/snaps/', imgName)
-    , presentableSnap = path.join(__dirname, '/public/snaps/', 'laptop-' + imgName)
-    , tmp = path.join(__dirname, '/tmp', imgName),
-    error;
+
+  let pageUrl = fixUrl(targetUrl.trim()),
+    exportFormat = exportType === 'screenshot' ? 'png' : 'pdf',
+    exportName = `${pageUrl.replace(/\W/g, '')}-${Date.now()}.${exportFormat}`,
+    snapPath = path.join(__dirname, '/public/snaps/', exportName),
+    snapResponseBody = {},
+    phantomInstance,
+    phantomPage;
 
 
   phantom.create()
-  .then(function (ph) {
-    ph.createPage()
-    .then(function (page) {
-      page.property('viewportSize', {width: 700, height: 400})
-      .then(function () {
-        page.open(pageUrl)
-        .then(function (status) {
-          if (status != 'success') {
-            error = 'Failed to fetch page at ' + pageUrl;
-            ph.exit();
-            return res.json(422, {msg: error});
-          } else {
-            page.render(snapPath)
-            .then(function () {
-              ph.exit();
-              return res.json({
-                snap: '/snaps/' + imgName
-              });
-            })
-            .catch(function (err) {
-              error = err;
-            });
-          }
-        })
-        .catch(function (err) {
-          error = err;
-        });
-      })
-      .catch(function (err) {
-        error = er;
-      });
+    .then(function(ph) {
+      phantomInstance = ph;
+      return phantomInstance.createPage();
     })
-    .catch(function (err) {
-      erro = err;
+    .then(function(page) {
+      phantomPage = page;
+      if (paperSize) {
+        return phantomPage.property('paperSize', paperSize);
+      } else {
+        return phantomPage.property('viewportSize', viewportSize);
+      }
+    })
+    .then(() => {
+      return phantomPage.setContent('', pageUrl);
+    })
+    .then(() => {
+      if (localStorage) {
+        return phantomPage.evaluate(setLocalStorage, localStorage);
+      }
+    })
+    .then(function() {
+      return phantomPage.open(pageUrl);
+    })
+    .then(function(status) {
+      if (status !== 'success') {
+        throw `Failed to fetch page at ${pageUrl}`;
+      } else {
+        return wait(waitFor);
+      }
+    })
+    .then(() => phantomPage.render(snapPath))
+    .then(() => {
+      let snap = `/snaps/${exportName}`;
+      snapResponseBody.snap = snap;
+      if (exportType === 'screenshot') {
+        return buildPresentableSnap(snapPath, exportName)
+          .then(() => {
+            snapResponseBody.laptop = `/snaps/laptop-${exportName}`;
+            return;
+          });
+      } else {
+        return;
+      }
+    })
+    .then(function() {
+      phantomInstance.exit();
+      return res.json(snapResponseBody);
+    })
+    .catch(function(error) {
+      phantomInstance.exit();
+      console.error(error);
+      return res.json(422, {
+        msg: error
+      });
     });
-  })
-  .catch(function (err) {
-    error = err;
-  });
 });
 
 app.listen(4000);
