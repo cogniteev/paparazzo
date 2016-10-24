@@ -1,0 +1,20 @@
+{
+  "bitwise": true,
+  "devel": true,
+  "curly": true,
+  "eqeqeq": true,
+  "esnext": true,
+  "forin": true,
+  "freeze": true,
+  "latedef": true,
+  "maxdepth": 4,
+  "maxparams": 4,
+  "nocomma": true,
+  "node": true,
+  "notypeof": true,
+  "onevar": true,
+  "shadow": true,
+  "undef": true,
+  "unused": "vars",
+  "white": true
+}
